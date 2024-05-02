@@ -6,6 +6,9 @@
 
 #include "logger.h"
 
+#define STATUS_STOPPED 0
+#define STATUS_WORKING 1
+
 struct Task {
   std::function<void()> op;
   int taskId;
