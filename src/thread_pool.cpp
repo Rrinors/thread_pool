@@ -33,12 +33,8 @@ void ThreadPool::worker() {
 }
 
 ThreadPool::ThreadPool(int threadCount) {
-  opWithMutex(statusLock, [this, threadCount]() {
-    this->status = STATUS_WORKING;
-    for (int i = 0; i < threadCount; i++) {
-      threads.emplace_back(&ThreadPool::worker, this);
-    }
-  });
+  status = STATUS_STOPPED;
+  Start(threadCount);
 }
 
 int ThreadPool::GetStatus() {
@@ -46,11 +42,9 @@ int ThreadPool::GetStatus() {
 }
 
 void ThreadPool::Shutdown() {
-  opWithMutex(statusLock, [this]() {
+  auto cnt = opWithMutex(statusLock, [this]() {
     this->status = STATUS_STOPPED;
-    while (!this->taskQueue.empty()) {
-      this->taskQueue.pop();
-    }
+    return this->taskQueue.size();
   });
   for (auto &thread : threads) {
     if (thread.joinable()) {
@@ -58,6 +52,21 @@ void ThreadPool::Shutdown() {
     }
   }
   threads.clear();
+  Logger::info("Thread pool shutdown, ", cnt, " task in queue");
 }
 
 ThreadPool::~ThreadPool() { Shutdown(); }
+
+void ThreadPool::Start(int threadCount) {
+  opWithMutex(statusLock, [this, threadCount]() {
+    if (this->status == STATUS_WORKING) {
+      Logger::info("Thread pool has started");
+      return;
+    }
+    this->status = STATUS_WORKING;
+    for (int i = 0; i < threadCount; i++) {
+      threads.emplace_back(&ThreadPool::worker, this);
+    }
+    Logger::info("Thread pool start");
+  });
+}
