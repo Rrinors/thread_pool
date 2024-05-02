@@ -1,6 +1,7 @@
 #include "include/thread_pool.h"
 
 int f(int x) {
+  std::this_thread::sleep_for(std::chrono::seconds(5));
   return x;
 }
 
@@ -12,12 +13,14 @@ int main() {
     res.emplace_back(tp.SubmitTask(i, f, i));
   }
 
-  for (int i = 0; i < 20; i++) {
-    int val = res[i].get();
-    Logger::info("Task Done: ", val);
-  }
+  std::this_thread::sleep_for(std::chrono::seconds(10));
 
   tp.Shutdown();
+  tp.Start(8);
+
+  for (auto &r : res) {
+    Logger::info("Task done: ", r.get());
+  }
 
   return 0;
 }

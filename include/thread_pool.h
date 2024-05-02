@@ -31,6 +31,7 @@ public:
 
   int GetStatus();
   void Shutdown();
+  void Start(int);
 
   template <typename F, typename... Args>
   auto SubmitTask(int taskId, F &&f, Args &&...args)
